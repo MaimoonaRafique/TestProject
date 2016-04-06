@@ -1,0 +1,319 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+    <script type="text/javascript">
+
+        //  var rootUrl = "http://" + document.location.hostname + ":" + window.location.port;
+        var rootUrl = "http://" + document.location.hostname + ":" + window.location.port;
+                                                /* OR */
+        //  var rootUrl = "http://localhost:1740";
+
+   var apiUrl = '/api/Users';
+        /* custom made function to format data*/
+
+
+        /* Get all resource from server in json */
+    function GetAllResource() {
+
+       $.ajax({
+           url: rootUrl + apiUrl,
+           type: 'GET',
+           dataType: 'json',
+           success: function (data) {
+               DisplayResourceList(data);
+           },
+           error: function () {
+               alert('Some error occured');
+           }
+       });
+
+
+    }
+
+        /* find a single resource from server in json */
+    function FindResource() {
+
+
+        if (!$('#empId').val()) {
+
+            alert('This field is required');
+            return;
+            }
+
+
+        var id = $('#empId').val();
+
+        $.getJSON(rootUrl + apiUrl + '/' + id)
+            .done(function (data) {
+
+                ShowResourceForEdit(data);
+            })
+            .fail(function (jqXHR, textStatus, err) {
+             //   $('#emp').text('Error: ' + err);
+                alert('Resource not found');
+            });
+        }
+
+        /* delete a single resource that reside on server, send request in json */
+    function DeleteResource() {
+        if (!$('#delempId').val()) {
+
+            alert('This field is required');
+            return;
+        }
+        var id = $('#delempId').val();
+
+        $.ajax({
+            url: rootUrl + apiUrl + '/' + id,
+            type: 'DELETE',
+            dataType: 'json',
+            success: function (data) {
+
+                GetAllResource();
+                alert('Resource deleted');
+
+            },
+            error: function () {
+                alert('Resource not found');
+            }
+        });
+
+    }
+
+        /* update a single resource that reside on server, send request in json */
+    function UpdateResource() {
+        var errors = 0;
+        $("#updateForm :input").map(function () {
+            if ( $(this).val().length == 0) {
+
+                errors++;
+            }
+        });
+        if (errors > 0) {
+            alert("All fields are required");
+            return false;
+        }
+
+        var $inputs = $('#updateForm :input');
+        var values = {};
+        $inputs.each(function () {
+
+            values[this.name] = $(this).val();
+        });
+
+        $.ajax({
+            url: rootUrl + apiUrl,
+            type: 'PUT',
+            data: JSON.stringify(values),
+            contentType: "application/json;charset=utf-8",
+            success: function (data) {
+                GetAllResource();
+                alert('Resource updated');
+
+            },
+            error: function () {
+                alert('Some error occured');
+            }
+        });
+
+
+    }
+        /* add a single resource , send request in json */
+    function AddResource() {
+        var errors = 0;
+        $("#addForm :input").map(function () {
+            if (!$(this).val()) {
+
+                errors++;
+            }
+        });
+        if (errors > 0) {
+           alert("All fields are required");
+            return false;
+        }
+
+        var $inputs = $('#addForm :input');
+        var values = {};
+        $inputs.each(function () {
+
+          values[this.name] = $(this).val();
+        });
+
+        /*
+
+        var resource = {
+            Name: $('#txtName').val(),
+            Dept: $('#txtDept').val(),
+            Salary: $('#txtSal').val()
+        };*/
+
+     //   alert(JSON.stringify(values, null, 4));
+        $.ajax({
+            url: rootUrl + apiUrl,
+            type: 'POST',
+            data: JSON.stringify(values),//$("#addForm").serialize()
+            contentType: "application/json;charset=utf-8",
+            success: function (data) {
+                GetAllResource();
+                alert('Resource added');
+
+            },
+            error: function () {
+                alert('Some error occured');
+            }
+        });
+
+
+    }
+
+    function DisplayResourceList(data) {
+        $("#jsonTable").empty();
+
+        var eTable = "<table class='table'><thead><tr>";
+        var columnSet = [];
+        /*getting table head names*/
+        for (var i = 0 ; i < data.length ; i++) {
+            var rowHash = data[i];
+            for (var key in rowHash) {
+                if ($.inArray(key, columnSet) == -1) {
+                    columnSet.push(key);
+                    eTable += "<th>" + key + "</th>";
+                }
+            }
+        }
+
+        eTable += "</tr></thead><tbody>";
+        /* fetching data for rows*/
+        $.each(data, function (index, row) {
+            eTable += "<tr>";
+            $.each(row, function (key, value) {
+                eTable += "<td>" + value + "</td>";
+            });
+            eTable += "</tr>";
+        });
+        eTable += "</tbody></table>";
+        $('#jsonTable').html(eTable);
+    }
+    function ShowResourceForEdit(resource) {
+        $("#resource").empty();
+        if (resource == null) {
+
+            alert('Resource Not Found')
+            return;
+        }
+        $("#resource").empty();
+        var columnSet = [];
+
+        for (var key in resource) {
+                if ($.inArray(key, columnSet) == -1) {
+                    columnSet.push(key);
+
+                }
+            }
+
+
+        var eTable = "    <form id='updateForm' method='put'><table class='table'>";
+        for (var colIndex = 0 ; colIndex < columnSet.length ; colIndex++) {
+            var cellValue = resource[columnSet[colIndex]];
+
+            if (cellValue == null) { cellValue = ""; }
+
+            eTable += "<tr><td>" + columnSet[colIndex] + "</td><td><input name='" + columnSet[colIndex] + "' type='text'  value='" + cellValue + "'</td></tr>";
+        }
+        eTable += "<tr><td colspan='3'align='center'><input class='btn btn-primary' type='button' value='Update' onclick='UpdateResource(); return false;' </td></tr>";
+
+
+        eTable += "</table>  </form>";
+        $("#resource").html(eTable);
+    }
+
+
+    </script>
+
+</head>
+<body class="container body-content">
+    <header>
+        <div>
+            <h2>RestFul Web Service -- ( Web Api  ) Client </h2>
+        </div>
+    </header>
+    <div id="body">
+        <div class="row">
+
+            <div class="col-md-3">
+                <div>
+                    <h3>Add Resource </h3>
+                    <form id="addForm" method="post">
+                        <table class="table">
+
+                            <!--  Just change the fields name given below and assign the value to name attribute according to your Model properties         -->
+                            <tr>
+                                <td>Name</td>
+                                <td><input type="text" name="name" /></td>
+                            </tr>
+                            <tr>
+                                <td>Password</td>
+                                <td> <input type="text" name="password" /></td>
+                            </tr>
+                            <tr>
+                                <!--    change the fields given above according to your model propeties       -->
+
+
+                                <td colspan="3" align="center"><input class="btn btn-primary" type="submit" value="Add" onclick="AddResource(); return false;" /></td>
+                            </tr>
+                        </table>
+                    </form>
+
+                </div>
+
+            </div>
+            <div class="col-md-3">
+
+                <div>
+                    <h3>Search by ID</h3>
+                    <input type="text" id="empId" size="5" />
+                    <input class="btn btn-primary" type="button" value="Search" onclick="FindResource();" />
+                    <div id="resource"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div>
+                    <h3>Delete Resource by ID</h3>
+                    <input type="text" id="delempId" size="5" />
+                    <input class="btn btn-primary" type="button" value="Delete" onclick="DeleteResource();" />
+
+                </div>
+
+            </div>
+
+
+
+
+
+        </div>
+        <div class="row">
+            <div>
+                <h3>Resource List</h3>
+                <input class="btn btn-primary" type="button" value="GetAll" onclick="GetAllResource();" />
+                <ul id="jsonTable" />
+
+            </div>
+        </div>
+        <section class="content-wrapper main-content clear-fix"></section>
+
+    </div>
+
+
+
+</body>
+</html>
